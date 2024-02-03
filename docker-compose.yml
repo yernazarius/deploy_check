@@ -1,0 +1,53 @@
+version: "3.8"
+services:
+  db:
+    image: postgres:16
+    container_name: psql_db_app
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    env_file:
+      - .env-non-dev
+  
+  redis: 
+    image: redis:7
+    container_name: redis_app
+
+  celery:
+    build: 
+      context: .
+    env_file:
+      - .env-non-dev
+    container_name: celery_app
+    command: ['/app/docker/celery.sh', 'celery']
+    depends_on:
+      - redis
+
+  flower:
+    build: 
+      context: .
+    env_file:
+      - .env-non-dev
+    container_name: flower_app
+    command: ['/app/docker/celery.sh', 'flower']
+    depends_on:
+      - celery
+      - redis
+    ports: 
+      - 7777:5555
+
+  
+  app:
+    build: 
+      context: .
+    env_file:
+      - .env-non-dev
+    container_name: backend_app
+    command: ['/app/docker/app.sh']
+    ports:
+      - "9999:8000"
+    depends_on:
+      - db
+
+
+volumes:
+  pgdata:
